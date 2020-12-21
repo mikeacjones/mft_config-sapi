@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:mongo="http://www.mulesoft.org/schema/mule/mongo" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd  http://www.mulesoft.org/schema/mule/mongo http://www.mulesoft.org/schema/mule/mongo/current/mule-mongo.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
-http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:mongo="http://www.mulesoft.org/schema/mule/mongo" xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd  http://www.mulesoft.org/schema/mule/mongo http://www.mulesoft.org/schema/mule/mongo/current/mule-mongo.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
     <http:listener-config name="mft-config-sapi-httpListenerConfig">
         <http:listener-connection host="0.0.0.0" port="8081" />
     </http:listener-config>
-    <apikit:config name="mft-config-sapi-config" api="resource::f8c4f898-332d-4206-b97a-29fc1ce40100:mft-config-sapi:1.0.2:raml:zip:mft-config-sapi.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <apikit:config name="mft-config-sapi-config" api="resource::f8c4f898-332d-4206-b97a-29fc1ce40100:mft-config-sapi:1.0.4:raml:zip:mft-config-sapi.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
     <flow name="mft-config-sapi-main">
         <http:listener config-ref="mft-config-sapi-httpListenerConfig" path="/api/*">
             <http:response statusCode="#[vars.httpStatus default 200]">
@@ -227,8 +226,8 @@ output application/json
         </ee:transform>
     </flow>
     <flow name="get:\jobs:mft-config-sapi-config">
-		<mongo:find-documents collectionName="mft-config-jobs" fields="," doc:name="Find documents" doc:id="3273caad-1e5e-4d35-b2c2-d00228b1556d" config-ref="MongoDB_Config">
-			<mongo:query ><![CDATA[#[output application/json
+        <mongo:find-documents collectionName="mft-config-jobs" fields="," doc:name="Find documents" doc:id="3273caad-1e5e-4d35-b2c2-d00228b1556d" config-ref="MongoDB_Config">
+            <mongo:query><![CDATA[#[output application/json
 var bothSystemIds = [(attributes.queryParams.system) if (attributes.queryParams.system?)]
 var inboundSystemIds  = [(attributes.queryParams.inboundSystem) if (attributes.queryParams.inboundSystem?)] ++ bothSystemIds
 var outboundSystemIds = [(attributes.queryParams.outboundSystem) if (attributes.queryParams.outboundSystem?)] ++ bothSystemIds
@@ -245,10 +244,10 @@ var outboundSystemIds = [(attributes.queryParams.outboundSystem) if (attributes.
 		}
 	}) if (sizeOf(outboundSystemIds) > 0)
 }]]]></mongo:query>
-		</mongo:find-documents>
-		<ee:transform doc:name="Transform Message" doc:id="4f663faf-31f1-4612-b65f-0992407b0100" >
-			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
+        </mongo:find-documents>
+        <ee:transform doc:name="Transform Message" doc:id="4f663faf-31f1-4612-b65f-0992407b0100">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
 payload map ( payload01 , indexOfPayload01 ) -> {
@@ -257,20 +256,20 @@ payload map ( payload01 , indexOfPayload01 ) -> {
 	inboundSystem: payload01.inboundSystem,
 	outboundSystem: payload01.outboundSystem
 }]]></ee:set-payload>
-			</ee:message>
-		</ee:transform>
+            </ee:message>
+        </ee:transform>
     </flow>
     <flow name="get:\systems:mft-config-sapi-config">
         <mongo:find-documents doc:name="Find documents" doc:id="c03c565b-caaf-4a5c-bf95-327efc8e7d03" config-ref="MongoDB_Config" collectionName="mft-config-systems" fields=",">
-			<mongo:query ><![CDATA[#[output application/json
+            <mongo:query><![CDATA[#[output application/json
 ---
 {
 	(systemType: attributes.queryParams.systemType) if (attributes.queryParams.systemType?)
 }]]]></mongo:query>
-		</mongo:find-documents>
-		<ee:transform doc:name="Transform Message" doc:id="16ea5b26-f3ca-402f-8b95-7df4e3a1fce9" >
-			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
+        </mongo:find-documents>
+        <ee:transform doc:name="Transform Message" doc:id="16ea5b26-f3ca-402f-8b95-7df4e3a1fce9">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
 payload map ( payload01 , indexOfPayload01 ) -> {
@@ -279,18 +278,18 @@ payload map ( payload01 , indexOfPayload01 ) -> {
 	systemType: payload01.systemType default "",
 	systemConfig: payload01.systemConfig
 }]]></ee:set-payload>
-			</ee:message>
-		</ee:transform>
+            </ee:message>
+        </ee:transform>
     </flow>
     <flow name="get:\systems\types:mft-config-sapi-config">
-		<mongo:find-documents collectionName="mft-config-system-types" fields="," doc:name="Find documents" doc:id="93c2b53d-dc8b-441c-a389-3d82720969d0" config-ref="MongoDB_Config">
-			<mongo:query ><![CDATA[#[output application/json
+        <mongo:find-documents collectionName="mft-config-system-types" fields="," doc:name="Find documents" doc:id="93c2b53d-dc8b-441c-a389-3d82720969d0" config-ref="MongoDB_Config">
+            <mongo:query><![CDATA[#[output application/json
 ---
 {}]]]></mongo:query>
-		</mongo:find-documents>
-		<ee:transform doc:name="Transform Message" doc:id="019e035f-9bdd-4a5a-b8a4-732eaebc2607" >
-			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
+        </mongo:find-documents>
+        <ee:transform doc:name="Transform Message" doc:id="019e035f-9bdd-4a5a-b8a4-732eaebc2607">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
 payload map ( payload01 , indexOfPayload01 ) -> {
@@ -300,8 +299,8 @@ payload map ( payload01 , indexOfPayload01 ) -> {
 	name: payload01."_id" default "",
 	systemConfigFields: payload01.systemconfigFields map ( systemconfigField , indexOfSystemconfigField ) -> systemconfigField
 }]]></ee:set-payload>
-			</ee:message>
-		</ee:transform>
+            </ee:message>
+        </ee:transform>
     </flow>
     <flow name="get:\jobs\(id):mft-config-sapi-config">
         <ee:transform doc:name="vars.id">
@@ -310,16 +309,16 @@ payload map ( payload01 , indexOfPayload01 ) -> {
             </ee:variables>
         </ee:transform>
         <mongo:find-documents doc:name="Find documents" doc:id="9e2aa05d-96c3-4d14-ba4a-ad192373de1b" config-ref="MongoDB_Config" collectionName="mft-config-jobs" fields=",">
-			<mongo:query ><![CDATA[#[output application/json
+            <mongo:query><![CDATA[#[output application/json
 ---
 {
 	'_id': { '\$oid': vars.id }
 }]]]></mongo:query>
-		</mongo:find-documents>
-		<validation:is-not-empty-collection doc:name="Is not empty collection" doc:id="146b9795-a803-4c59-b56b-9d89017807aa" >
-			<error-mapping sourceType="VALIDATION:EMPTY_COLLECTION" targetType="APP:NOT_FOUND" />
-		</validation:is-not-empty-collection>
-		<ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+        </mongo:find-documents>
+        <validation:is-not-empty-collection doc:name="Is not empty collection" doc:id="146b9795-a803-4c59-b56b-9d89017807aa">
+            <error-mapping sourceType="VALIDATION:EMPTY_COLLECTION" targetType="APP:NOT_FOUND" />
+        </validation:is-not-empty-collection>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
@@ -340,16 +339,16 @@ output application/json
             </ee:variables>
         </ee:transform>
         <mongo:find-documents collectionName="mft-config-systems" fields="," doc:name="Find documents" doc:id="7bb97ad7-fc3b-4833-adf6-6f8936b8f9f3" config-ref="MongoDB_Config">
-			<mongo:query ><![CDATA[#[output application/json
+            <mongo:query><![CDATA[#[output application/json
 ---
 {
 	'_id': { '\$oid': vars.id }
 }]]]></mongo:query>
-		</mongo:find-documents>
-		<validation:is-not-empty-collection doc:name="Is not empty collection" doc:id="c5137cb1-85fc-4a9b-8ba0-f6cd5568b39f" >
-			<error-mapping sourceType="VALIDATION:EMPTY_COLLECTION" targetType="APP:NOT_FOUND" />
-		</validation:is-not-empty-collection>
-		<ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+        </mongo:find-documents>
+        <validation:is-not-empty-collection doc:name="Is not empty collection" doc:id="c5137cb1-85fc-4a9b-8ba0-f6cd5568b39f">
+            <error-mapping sourceType="VALIDATION:EMPTY_COLLECTION" targetType="APP:NOT_FOUND" />
+        </validation:is-not-empty-collection>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
@@ -369,17 +368,17 @@ output application/json
                 <ee:set-variable variableName="name">attributes.uriParams.'name'</ee:set-variable>
             </ee:variables>
         </ee:transform>
-		<mongo:find-documents doc:name="Find documents" doc:id="70863dd9-2ccd-4d46-ab4a-bb8d7ffd272f" config-ref="MongoDB_Config" collectionName="mft-config-system-types" fields=",">
-			<mongo:query ><![CDATA[#[output application/json
+        <mongo:find-documents doc:name="Find documents" doc:id="70863dd9-2ccd-4d46-ab4a-bb8d7ffd272f" config-ref="MongoDB_Config" collectionName="mft-config-system-types" fields=",">
+            <mongo:query><![CDATA[#[output application/json
 ---
 {
 	'_id': vars.name
 }]]]></mongo:query>
-		</mongo:find-documents>
-        <validation:is-not-empty-collection doc:name="Is not empty collection" doc:id="15c82db7-eba8-46ca-a04d-e3d68def7cc4" >
-			<error-mapping sourceType="VALIDATION:EMPTY_COLLECTION" targetType="APP:NOT_FOUND" />
-		</validation:is-not-empty-collection>
-		<ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+        </mongo:find-documents>
+        <validation:is-not-empty-collection doc:name="Is not empty collection" doc:id="15c82db7-eba8-46ca-a04d-e3d68def7cc4">
+            <error-mapping sourceType="VALIDATION:EMPTY_COLLECTION" targetType="APP:NOT_FOUND" />
+        </validation:is-not-empty-collection>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
@@ -395,9 +394,9 @@ output application/json
         </ee:transform>
     </flow>
     <flow name="post:\jobs:application\json:mft-config-sapi-config">
-		<flow-ref doc:name="validate-inboundOutboundSystems-exist" doc:id="1341cf7e-f702-4097-bcf7-99be7d37ae0b" name="validate-inboundOutboundSystems-exist" />
-		<mongo:insert-document collectionName="mft-config-jobs" doc:name="Insert document" doc:id="c1ac24a4-c380-44f4-960b-8c09d4ce6346" config-ref="MongoDB_Config"/>
-		<ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+        <flow-ref doc:name="validate-inboundOutboundSystems-exist" doc:id="1341cf7e-f702-4097-bcf7-99be7d37ae0b" name="validate-inboundOutboundSystems-exist" />
+        <mongo:insert-document collectionName="mft-config-jobs" doc:name="Insert document" doc:id="c1ac24a4-c380-44f4-960b-8c09d4ce6346" config-ref="MongoDB_Config" />
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
@@ -409,9 +408,9 @@ output application/json
         </ee:transform>
     </flow>
     <flow name="post:\systems:application\json:mft-config-sapi-config">
-		<flow-ref doc:name="validate-systemType-exists" doc:id="0e7fcac2-89a2-4b89-ab2a-a3eb3aa26061" name="validate-systemType-exists"/>
-		<mongo:insert-document collectionName="mft-config-systems" doc:name="Insert document" doc:id="d4b8f387-bd82-469e-9a6e-d2fc52748d7a" config-ref="MongoDB_Config"/>
-		<ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+        <flow-ref doc:name="validate-systemType-exists" doc:id="0e7fcac2-89a2-4b89-ab2a-a3eb3aa26061" name="validate-systemType-exists" />
+        <mongo:insert-document collectionName="mft-config-systems" doc:name="Insert document" doc:id="d4b8f387-bd82-469e-9a6e-d2fc52748d7a" config-ref="MongoDB_Config" />
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
@@ -437,8 +436,8 @@ output application/json
 }]]></ee:set-payload>
             </ee:message>
         </ee:transform>
-		<mongo:insert-document doc:name="Insert document" doc:id="4c8b7445-2ffd-46f5-a8c9-6f567aa820ce" config-ref="MongoDB_Config" collectionName="mft-config-system-types"/>
-		<ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" doc:name="return id">
+        <mongo:insert-document doc:name="Insert document" doc:id="4c8b7445-2ffd-46f5-a8c9-6f567aa820ce" config-ref="MongoDB_Config" collectionName="mft-config-system-types" />
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" doc:name="return id">
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
