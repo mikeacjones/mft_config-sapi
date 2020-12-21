@@ -30,7 +30,13 @@
 				<version>${mule.maven.plugin.version}</version>
 				<extensions>true</extensions>
 				<configuration>
-				</configuration>
+				<sharedLibraries>
+                        <sharedLibrary>
+                            <groupId>org.mongodb</groupId>
+                            <artifactId>mongodb-driver-legacy</artifactId>
+                        </sharedLibrary>
+                    </sharedLibraries>
+                </configuration>
 			</plugin>
 		</plugins>
 	</build>
@@ -48,17 +54,40 @@
             <version>1.2.0</version>
             <classifier>mule-plugin</classifier>
         </dependency>
-		<dependency>
+    	<dependency>
+            <groupId>org.mule.modules</groupId>
+            <artifactId>mule-apikit-module</artifactId>
+            <version>1.3.16</version>
+            <classifier>mule-plugin</classifier>
+        </dependency>
+    	<dependency>
+            <groupId>com.mulesoft.modules</groupId>
+            <artifactId>mule-secure-configuration-property-module</artifactId>
+            <version>1.2.3</version>
+            <classifier>mule-plugin</classifier>
+        </dependency>
+    	<dependency>
+            <groupId>com.mulesoft.connectors</groupId>
+            <artifactId>mule-mongodb-connector</artifactId>
+            <version>6.3.0</version>
+            <classifier>mule-plugin</classifier>
+        </dependency>
+    	<dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongodb-driver-legacy</artifactId>
+            <version>4.0.4</version>
+        </dependency>
+    	<dependency>
             <groupId>f8c4f898-332d-4206-b97a-29fc1ce40100</groupId>
             <artifactId>mft-config-sapi</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.2</version>
             <classifier>raml</classifier>
             <type>zip</type>
         </dependency>
     	<dependency>
             <groupId>org.mule.modules</groupId>
-            <artifactId>mule-apikit-module</artifactId>
-            <version>1.3.16</version>
+            <artifactId>mule-validation-module</artifactId>
+            <version>1.4.0</version>
             <classifier>mule-plugin</classifier>
         </dependency>
     </dependencies>

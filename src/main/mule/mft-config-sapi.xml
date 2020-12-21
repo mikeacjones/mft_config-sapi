@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd ">
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:mongo="http://www.mulesoft.org/schema/mule/mongo" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd  http://www.mulesoft.org/schema/mule/mongo http://www.mulesoft.org/schema/mule/mongo/current/mule-mongo.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
     <http:listener-config name="mft-config-sapi-httpListenerConfig">
         <http:listener-connection host="0.0.0.0" port="8081" />
     </http:listener-config>
-    <apikit:config name="mft-config-sapi-config" api="resource::f8c4f898-332d-4206-b97a-29fc1ce40100:mft-config-sapi:1.0.0:raml:zip:mft-config-sapi.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <apikit:config name="mft-config-sapi-config" api="resource::f8c4f898-332d-4206-b97a-29fc1ce40100:mft-config-sapi:1.0.2:raml:zip:mft-config-sapi.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
     <flow name="mft-config-sapi-main">
         <http:listener config-ref="mft-config-sapi-httpListenerConfig" path="/api/*">
             <http:response statusCode="#[vars.httpStatus default 200]">
@@ -16,21 +17,21 @@
         </http:listener>
         <apikit:router config-ref="mft-config-sapi-config" />
         <error-handler>
-            <on-error-propagate type="APIKIT:BAD_REQUEST">
-                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <on-error-propagate type="APIKIT:BAD_REQUEST, APP:BAD_REQUEST" enableNotifications="true" logException="true">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
                     <ee:message>
                         <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
-{message: "Bad request"}]]></ee:set-payload>
+{message: error.description default "Bad request"}]]></ee:set-payload>
                     </ee:message>
                     <ee:variables>
-                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                        <ee:set-variable variableName="httpStatus"><![CDATA[400]]></ee:set-variable>
                     </ee:variables>
                 </ee:transform>
             </on-error-propagate>
-            <on-error-propagate type="APIKIT:NOT_FOUND">
-                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <on-error-propagate type="APIKIT:NOT_FOUND, APP:NOT_FOUND" enableNotifications="true" logException="true">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
                     <ee:message>
                         <ee:set-payload><![CDATA[%dw 2.0
 output application/json
@@ -43,7 +44,7 @@ output application/json
                 </ee:transform>
             </on-error-propagate>
             <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
-                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
                     <ee:message>
                         <ee:set-payload><![CDATA[%dw 2.0
 output application/json
@@ -56,7 +57,7 @@ output application/json
                 </ee:transform>
             </on-error-propagate>
             <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
-                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
                     <ee:message>
                         <ee:set-payload><![CDATA[%dw 2.0
 output application/json
@@ -69,7 +70,7 @@ output application/json
                 </ee:transform>
             </on-error-propagate>
             <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
-                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
                     <ee:message>
                         <ee:set-payload><![CDATA[%dw 2.0
 output application/json
@@ -82,7 +83,7 @@ output application/json
                 </ee:transform>
             </on-error-propagate>
             <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
-                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
                     <ee:message>
                         <ee:set-payload><![CDATA[%dw 2.0
 output application/json
@@ -109,7 +110,7 @@ output application/json
         <apikit:console config-ref="mft-config-sapi-config" />
         <error-handler>
             <on-error-propagate type="APIKIT:NOT_FOUND">
-                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
                     <ee:message>
                         <ee:set-payload><![CDATA[%dw 2.0
 output application/json
@@ -124,12 +125,12 @@ output application/json
         </error-handler>
     </flow>
     <flow name="put:\systems\(id):application\json:mft-config-sapi-config">
-        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+        <ee:transform>
             <ee:variables>
                 <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
             </ee:variables>
         </ee:transform>
-        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
@@ -141,12 +142,12 @@ output application/json
         </ee:transform>
     </flow>
     <flow name="put:\jobs\(id):application\json:mft-config-sapi-config">
-        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+        <ee:transform>
             <ee:variables>
                 <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
             </ee:variables>
         </ee:transform>
-        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
@@ -158,12 +159,12 @@ output application/json
         </ee:transform>
     </flow>
     <flow name="put:\systems\types\(name):application\json:mft-config-sapi-config">
-        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+        <ee:transform>
             <ee:variables>
                 <ee:set-variable variableName="name">attributes.uriParams.'name'</ee:set-variable>
             </ee:variables>
         </ee:transform>
-        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
@@ -175,12 +176,12 @@ output application/json
         </ee:transform>
     </flow>
     <flow name="delete:\systems\(id):mft-config-sapi-config">
-        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+        <ee:transform>
             <ee:variables>
                 <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
             </ee:variables>
         </ee:transform>
-        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
@@ -192,12 +193,12 @@ output application/json
         </ee:transform>
     </flow>
     <flow name="delete:\jobs\(id):mft-config-sapi-config">
-        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+        <ee:transform>
             <ee:variables>
                 <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
             </ee:variables>
         </ee:transform>
-        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
@@ -209,12 +210,12 @@ output application/json
         </ee:transform>
     </flow>
     <flow name="delete:\systems\types\(name):mft-config-sapi-config">
-        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+        <ee:transform>
             <ee:variables>
                 <ee:set-variable variableName="name">attributes.uriParams.'name'</ee:set-variable>
             </ee:variables>
         </ee:transform>
-        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
@@ -226,129 +227,224 @@ output application/json
         </ee:transform>
     </flow>
     <flow name="get:\jobs:mft-config-sapi-config">
-        <logger level="INFO" message="get:\jobs:mft-config-sapi-config" />
+		<mongo:find-documents collectionName="mft-config-jobs" fields="," doc:name="Find documents" doc:id="3273caad-1e5e-4d35-b2c2-d00228b1556d" config-ref="MongoDB_Config">
+			<mongo:query ><![CDATA[#[output application/json
+var bothSystemIds = [(attributes.queryParams.system) if (attributes.queryParams.system?)]
+var inboundSystemIds  = [(attributes.queryParams.inboundSystem) if (attributes.queryParams.inboundSystem?)] ++ bothSystemIds
+var outboundSystemIds = [(attributes.queryParams.outboundSystem) if (attributes.queryParams.outboundSystem?)] ++ bothSystemIds
+---
+{
+	(inboundSystem: {
+		id: {
+			'\$in': inboundSystemIds map ($ as String)
+		}
+	}) if (sizeOf(inboundSystemIds) > 0),
+	(outboundSystem: {
+		id: {
+			'\$in': outboundSystemIds map ($ as String)
+		}
+	}) if (sizeOf(outboundSystemIds) > 0)
+}]]]></mongo:query>
+		</mongo:find-documents>
+		<ee:transform doc:name="Transform Message" doc:id="4f663faf-31f1-4612-b65f-0992407b0100" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map ( payload01 , indexOfPayload01 ) -> {
+	id: payload01."_id"."\$oid",
+	name: payload01.name,
+	inboundSystem: payload01.inboundSystem,
+	outboundSystem: payload01.outboundSystem
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
     </flow>
     <flow name="get:\systems:mft-config-sapi-config">
-        <logger level="INFO" message="get:\systems:mft-config-sapi-config" />
+        <mongo:find-documents doc:name="Find documents" doc:id="c03c565b-caaf-4a5c-bf95-327efc8e7d03" config-ref="MongoDB_Config" collectionName="mft-config-systems" fields=",">
+			<mongo:query ><![CDATA[#[output application/json
+---
+{
+	(systemType: attributes.queryParams.systemType) if (attributes.queryParams.systemType?)
+}]]]></mongo:query>
+		</mongo:find-documents>
+		<ee:transform doc:name="Transform Message" doc:id="16ea5b26-f3ca-402f-8b95-7df4e3a1fce9" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map ( payload01 , indexOfPayload01 ) -> {
+	id: payload01."_id"."\$oid",
+	name: payload01.name default "",
+	systemType: payload01.systemType default "",
+	systemConfig: payload01.systemConfig
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
     </flow>
     <flow name="get:\systems\types:mft-config-sapi-config">
-        <logger level="INFO" message="get:\systems\types:mft-config-sapi-config" />
+		<mongo:find-documents collectionName="mft-config-system-types" fields="," doc:name="Find documents" doc:id="93c2b53d-dc8b-441c-a389-3d82720969d0" config-ref="MongoDB_Config">
+			<mongo:query ><![CDATA[#[output application/json
+---
+{}]]]></mongo:query>
+		</mongo:find-documents>
+		<ee:transform doc:name="Transform Message" doc:id="019e035f-9bdd-4a5a-b8a4-732eaebc2607" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map ( payload01 , indexOfPayload01 ) -> {
+	inbound: payload01.inbound default true,
+	outbound: payload01.outbound default true,
+	jobConfigFields: payload01.jobConfigFields map ( jobConfigField , indexOfJobConfigField ) -> jobConfigField,
+	name: payload01."_id" default "",
+	systemConfigFields: payload01.systemconfigFields map ( systemconfigField , indexOfSystemconfigField ) -> systemconfigField
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
     </flow>
     <flow name="get:\jobs\(id):mft-config-sapi-config">
-        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+        <ee:transform doc:name="vars.id">
             <ee:variables>
                 <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
             </ee:variables>
         </ee:transform>
-        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+        <mongo:find-documents doc:name="Find documents" doc:id="9e2aa05d-96c3-4d14-ba4a-ad192373de1b" config-ref="MongoDB_Config" collectionName="mft-config-jobs" fields=",">
+			<mongo:query ><![CDATA[#[output application/json
+---
+{
+	'_id': { '\$oid': vars.id }
+}]]]></mongo:query>
+		</mongo:find-documents>
+		<validation:is-not-empty-collection doc:name="Is not empty collection" doc:id="146b9795-a803-4c59-b56b-9d89017807aa" >
+			<error-mapping sourceType="VALIDATION:EMPTY_COLLECTION" targetType="APP:NOT_FOUND" />
+		</validation:is-not-empty-collection>
+		<ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
 {
-  id: "5fab165bd1d26e1b1074b880",
-  name: "Download files to local from Mulesoft",
-  inboundSystem: {
-    id: "5f7a494551e6e02780bb262b",
-    config: {
-      sourcePath: "/upload/Mulesoft/upload/",
-      sourceFilePattern: "*.csv",
-      destPath: "/users/mjones1/mft/Mulesoft/in/",
-      destFilePattern: "*.csv"
-    }
-  }
+	name: payload[0].name default "",
+	id: payload[0].'_id'.'\$oid' as String default "",
+	inboundSystem: payload[0].inboundSystem,
+	outboundSystem: payload[0].outboundSystem
 }]]></ee:set-payload>
             </ee:message>
         </ee:transform>
     </flow>
     <flow name="get:\systems\(id):mft-config-sapi-config">
-        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+        <ee:transform doc:name="vars.id">
             <ee:variables>
                 <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
             </ee:variables>
         </ee:transform>
-        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+        <mongo:find-documents collectionName="mft-config-systems" fields="," doc:name="Find documents" doc:id="7bb97ad7-fc3b-4833-adf6-6f8936b8f9f3" config-ref="MongoDB_Config">
+			<mongo:query ><![CDATA[#[output application/json
+---
+{
+	'_id': { '\$oid': vars.id }
+}]]]></mongo:query>
+		</mongo:find-documents>
+		<validation:is-not-empty-collection doc:name="Is not empty collection" doc:id="c5137cb1-85fc-4a9b-8ba0-f6cd5568b39f" >
+			<error-mapping sourceType="VALIDATION:EMPTY_COLLECTION" targetType="APP:NOT_FOUND" />
+		</validation:is-not-empty-collection>
+		<ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
 {
-  id: "5f7a494551e6e02780bb262b",
-  name: "Mulesoft SFTP",
-  systemType: "SFTP",
-  systemConfig: {
-    host: "eksprod.tools.mulesoft.com",
-    port: 31969,
-    username: "mulesoft",
-    password: "ThisIsAFakePassword"
-  }
+	name: payload[0].name default "",
+	systemType: payload[0].systemType default "",
+	id: payload[0].'_id'.'\$oid' as String default "",
+	systemConfig: payload[0].systemConfig
 }]]></ee:set-payload>
             </ee:message>
         </ee:transform>
     </flow>
     <flow name="get:\systems\types\(name):mft-config-sapi-config">
-        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+        <ee:transform doc:name="vars.name">
             <ee:variables>
                 <ee:set-variable variableName="name">attributes.uriParams.'name'</ee:set-variable>
             </ee:variables>
         </ee:transform>
-        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+		<mongo:find-documents doc:name="Find documents" doc:id="70863dd9-2ccd-4d46-ab4a-bb8d7ffd272f" config-ref="MongoDB_Config" collectionName="mft-config-system-types" fields=",">
+			<mongo:query ><![CDATA[#[output application/json
+---
+{
+	'_id': vars.name
+}]]]></mongo:query>
+		</mongo:find-documents>
+        <validation:is-not-empty-collection doc:name="Is not empty collection" doc:id="15c82db7-eba8-46ca-a04d-e3d68def7cc4" >
+			<error-mapping sourceType="VALIDATION:EMPTY_COLLECTION" targetType="APP:NOT_FOUND" />
+		</validation:is-not-empty-collection>
+		<ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
 {
-  name: "SFTP",
-  inbound: true,
-  outbound: true,
-  systemConfigFields: [
-    "host", 
-    "port", 
-    "username", 
-    "password"
-  ],
-  jobConfigFields: [
-    "sourcePath", 
-    "sourceFilePattern", 
-    "destPath", 
-    "destFilePattern"
-  ]
+	inbound: payload[0].inbound default true,
+	outbound: payload[0].outbound default true,
+	jobConfigFields: payload[0].jobConfigFields map ( jobConfigField , indexOfJobConfigField ) -> jobConfigField,
+	name: payload[0].'_id'.'\$oid' default "",
+	systemConfigFields: payload[0].systemconfigFields map ( systemconfigField , indexOfSystemconfigField ) -> systemconfigField
 }]]></ee:set-payload>
             </ee:message>
         </ee:transform>
     </flow>
     <flow name="post:\jobs:application\json:mft-config-sapi-config">
-        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+		<flow-ref doc:name="validate-inboundOutboundSystems-exist" doc:id="1341cf7e-f702-4097-bcf7-99be7d37ae0b" name="validate-inboundOutboundSystems-exist" />
+		<mongo:insert-document collectionName="mft-config-jobs" doc:name="Insert document" doc:id="c1ac24a4-c380-44f4-960b-8c09d4ce6346" config-ref="MongoDB_Config"/>
+		<ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
 {
-  id: "5fab165bd1d26e1b1074b880"
+  id: payload.'_id'.'\$oid'
 }]]></ee:set-payload>
             </ee:message>
         </ee:transform>
     </flow>
     <flow name="post:\systems:application\json:mft-config-sapi-config">
-        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+		<flow-ref doc:name="validate-systemType-exists" doc:id="0e7fcac2-89a2-4b89-ab2a-a3eb3aa26061" name="validate-systemType-exists"/>
+		<mongo:insert-document collectionName="mft-config-systems" doc:name="Insert document" doc:id="d4b8f387-bd82-469e-9a6e-d2fc52748d7a" config-ref="MongoDB_Config"/>
+		<ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
 {
-  id: "5f7a494551e6e02780bb262b"
+  id: payload.'_id'.'\$oid'
 }]]></ee:set-payload>
             </ee:message>
         </ee:transform>
     </flow>
-    <flow name="post:\systems\types:mft-config-sapi-config">
-        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+    <flow name="post:\systems\types:application\json:mft-config-sapi-config">
+        <ee:transform doc:name="map inbound to use type name as object id" doc:id="301a5f61-c590-4dec-ab58-64123de8c774">
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
 {
-  message: "System type 'SFTP' already exists"
+	"_id": payload.name,
+	inbound: payload.inbound,
+	outbound: payload.outbound,
+	jobConfigFields: payload.jobConfigFields,
+	systemconfigFields: payload.systemConfigFields
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+		<mongo:insert-document doc:name="Insert document" doc:id="4c8b7445-2ffd-46f5-a8c9-6f567aa820ce" config-ref="MongoDB_Config" collectionName="mft-config-system-types"/>
+		<ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" doc:name="return id">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	message: "System type created"
 }]]></ee:set-payload>
             </ee:message>
         </ee:transform>
