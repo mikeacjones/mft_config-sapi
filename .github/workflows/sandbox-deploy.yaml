@@ -8,6 +8,8 @@ jobs:
   buildAndDeploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
       - name: Build and deploy artifact to sandbox
         run: mvn -B deploy -DmuleDeploy -s .maven/settings.xml
         env:
