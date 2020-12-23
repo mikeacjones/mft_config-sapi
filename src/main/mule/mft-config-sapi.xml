@@ -176,17 +176,21 @@ output application/json
                 <ee:set-variable variableName="name"><![CDATA[attributes.uriParams.'name']]></ee:set-variable>
             </ee:variables>
         </ee:transform>
-        <mongo:count-documents collectionName="mft-config-system-types" doc:name="validate that type exists" doc:id="212ffd97-0f15-463f-9d7d-7c94d23efad7" config-ref="MongoDB_Config">
+        <mongo:count-documents collectionName="mft-config-system-types" doc:name="validate that type exists" doc:id="212ffd97-0f15-463f-9d7d-7c94d23efad7" config-ref="MongoDB_Config" target="systemTypeCount">
             <mongo:condition-query><![CDATA[#[output application/json
 ---
 { '_id': vars.name }]]]></mongo:condition-query>
         </mongo:count-documents>
-        <validation:is-true doc:name="throw APP:NOT_FOUND if count &lt;= 0" doc:id="7316f09d-6a9c-4244-bdc8-5ab965977349" expression="#[payload &gt; 0]" message="#[&quot;Could not find system type with name '$(vars.name)'&quot;]">
+        <validation:is-true doc:name="throw APP:NOT_FOUND if count &lt;= 0" doc:id="7316f09d-6a9c-4244-bdc8-5ab965977349" expression="#[vars.systemTypeCount &gt; 0]" message="#[&quot;Could not find system type with name '$(vars.name)'&quot;]">
             <error-mapping sourceType="VALIDATION:INVALID_BOOLEAN" targetType="APP:NOT_FOUND" />
         </validation:is-true>
         <mongo:update-documents collectionName="mft-config-system-types" doc:name="update system type" doc:id="ca959fd9-4735-4b11-9cc0-d54cf6a4585b" config-ref="MongoDB_Config">
-            <mongo:find-query><![CDATA[#[{ '_id': vars.name }]]]></mongo:find-query>
-            <mongo:content-to-update><![CDATA[#[payload - "id"]]]></mongo:content-to-update>
+            <mongo:find-query><![CDATA[#[output application/json
+---
+{ '_id': vars.name }]]]></mongo:find-query>
+            <mongo:content-to-update><![CDATA[#[output application/json
+---
+payload - "name" - "_id"]]]></mongo:content-to-update>
         </mongo:update-documents>
     </flow>
     <flow name="delete:\systems\(id):mft-config-sapi-config">
@@ -347,9 +351,9 @@ output application/json
 payload map ( payload01 , indexOfPayload01 ) -> {
 	inbound: payload01.inbound default true,
 	outbound: payload01.outbound default true,
-	jobConfigFields: payload01.jobConfigFields map ( jobConfigField , indexOfJobConfigField ) -> jobConfigField,
+	jobConfigFields: payload01.jobConfigFields,
 	name: payload01."_id" default "",
-	systemConfigFields: payload01.systemconfigFields map ( systemconfigField , indexOfSystemconfigField ) -> systemconfigField
+	systemConfigFields: payload01.systemConfigFields
 }]]></ee:set-payload>
             </ee:message>
         </ee:transform>
@@ -438,9 +442,9 @@ output application/json
 {
 	inbound: payload[0].inbound default true,
 	outbound: payload[0].outbound default true,
-	jobConfigFields: payload[0].jobConfigFields map ( jobConfigField , indexOfJobConfigField ) -> jobConfigField,
+	jobConfigFields: payload[0].jobConfigFields,
 	name: payload[0].'_id' default "",
-	systemConfigFields: payload[0].systemconfigFields map ( systemconfigField , indexOfSystemconfigField ) -> systemconfigField
+	systemConfigFields: payload[0].systemConfigFields
 }]]></ee:set-payload>
             </ee:message>
         </ee:transform>
