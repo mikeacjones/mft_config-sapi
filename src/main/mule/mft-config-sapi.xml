@@ -94,6 +94,19 @@ output application/json
                     </ee:variables>
                 </ee:transform>
             </on-error-propagate>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="61b9c854-0294-467f-9621-ffeaeff44c41" type="APP:CONFLICT">
+				<ee:transform doc:name="Transform Message" doc:id="398d2009-9d48-4092-8f77-1affe5f8f96a" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: error.description default "Resource not found"}]]></ee:set-payload>
+					</ee:message>
+					<ee:variables>
+						<ee:set-variable variableName="httpStatus"><![CDATA[409]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+			</on-error-propagate>
         </error-handler>
     </flow>
     <flow name="mft-config-sapi-console">
@@ -465,7 +478,13 @@ output application/json
         </ee:transform>
     </flow>
     <flow name="post:\systems\types:application\json:mft-config-sapi-config">
-        <ee:transform doc:name="map inbound to use type name as object id" doc:id="301a5f61-c590-4dec-ab58-64123de8c774">
+        <mongo:count-documents collectionName="mft-config-system-types" doc:name="validate systemType doesnt exist" doc:id="6b57225d-4437-4fb3-bc12-87f8373aebde" config-ref="MongoDB_Config" target="systemTypeCount">
+			<mongo:condition-query ><![CDATA[#[{ '_id': payload.name }]]]></mongo:condition-query>
+		</mongo:count-documents>
+		<validation:is-true doc:name="throw APP:CONFLICT if systemType exists" doc:id="2dcc24fc-4fa0-4905-8d50-ca9588d9259a" message="#[&quot;System type '$(payload.name)' already exists&quot;]" expression="#[vars.systemTypeCount == 0]">
+			<error-mapping sourceType="VALIDATION:INVALID_BOOLEAN" targetType="APP:CONFLICT" />
+		</validation:is-true>
+		<ee:transform doc:name="map inbound to use type name as object id" doc:id="301a5f61-c590-4dec-ab58-64123de8c774">
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
