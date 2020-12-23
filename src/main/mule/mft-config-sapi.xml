@@ -35,10 +35,10 @@ output application/json
                         <ee:set-payload><![CDATA[%dw 2.0
 output application/json
 ---
-{message: "Resource not found"}]]></ee:set-payload>
+{message: error.description default "Resource not found"}]]></ee:set-payload>
                     </ee:message>
                     <ee:variables>
-                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                        <ee:set-variable variableName="httpStatus"><![CDATA[404]]></ee:set-variable>
                     </ee:variables>
                 </ee:transform>
             </on-error-propagate>
@@ -175,21 +175,44 @@ output application/json
         </ee:transform>
     </flow>
     <flow name="delete:\systems\(id):mft-config-sapi-config">
-        <ee:transform>
+        <ee:transform doc:name="vars.id">
             <ee:variables>
                 <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
             </ee:variables>
         </ee:transform>
-        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
+        <mongo:count-documents doc:name="validate system with ID exists" doc:id="2b3a46be-d218-4b0a-bdb5-ff85083e9cbe" config-ref="MongoDB_Config" collectionName="mft-config-systems">
+			<mongo:condition-query ><![CDATA[#[output application/json
+---
+{ '_id': { '\$oid': vars.id } }]]]></mongo:condition-query>
+		</mongo:count-documents>
+		<validation:is-true doc:name="throw APP:NOT_FOUND if count &lt;= 0" doc:id="8283a8b8-2519-42fc-a60d-d768aa11765c" expression="#[payload &gt; 0]" message="#[&quot;System with ID '$(vars.id)' does not exist&quot;]">
+			<error-mapping sourceType="VALIDATION:INVALID_BOOLEAN" targetType="APP:NOT_FOUND" />
+		</validation:is-true>
+		<mongo:execute-generic-command doc:name="execute aggregation pipeline to count jobs using system ID" doc:id="e315c908-4c19-42be-9d38-2573933425ec" config-ref="MongoDB_Config">
+			<mongo:command ><![CDATA[#[output application/json
 ---
 {
-  message: "System config currently in use"
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
+	aggregate: "mft-config-jobs",
+	pipeline: [
+		'\$match': {
+			'\$or': [
+				{ 'inboundSystem.id': vars.id },
+				{ 'outboundSystem.id': vars.id }
+			]
+		},
+		'\$count': "jobCount"
+	],
+	cursor: {}
+}]]]></mongo:command>
+		</mongo:execute-generic-command>
+		<validation:is-true doc:name="throw APP:BAD_REQUEST if count &gt; 0" doc:id="84d89f2a-b3ee-4037-8abc-5afc1303dd2c" expression="#[payload..jobCount[0] == 0]" message="#[&quot;System with ID '$(vars.id)' is in use&quot;]">
+			<error-mapping sourceType="VALIDATION:INVALID_BOOLEAN" targetType="APP:BAD_REQUEST" />
+		</validation:is-true>
+		<mongo:remove-documents doc:name="remove system" doc:id="22c512f6-178f-4187-8a07-5bd019dca3e7" config-ref="MongoDB_Config" collectionName="mft-config-systems">
+			<mongo:find-query ><![CDATA[#[output application/json
+---
+{ '_id': { '\$oid': vars.id } }]]]></mongo:find-query>
+		</mongo:remove-documents>
     </flow>
     <flow name="delete:\jobs\(id):mft-config-sapi-config">
         <ee:transform doc:name="vars.id">
@@ -198,17 +221,17 @@ output application/json
             </ee:variables>
         </ee:transform>
 		<mongo:count-documents collectionName="mft-config-jobs" doc:name="validate job with ID exists" doc:id="03a6ab94-fbe5-486b-8aa9-8380ff53fafe" config-ref="MongoDB_Config" >
-			<mongo:query ><![CDATA[#[output application/json
+			<mongo:condition-query ><![CDATA[#[output application/json
 ---
-{ '_id': { '\$oid': vars.id } }]]]></mongo:query>
+{ '_id': { '\$oid': vars.id } }]]]></mongo:condition-query>
 		</mongo:count-documents>
 		<validation:is-true doc:name="throw APP:NOT_FOUND if count &lt;= 0" doc:id="57491167-5ff1-4088-8302-daeb26547077" expression="#[payload &gt; 0]" message="#[&quot;Job with ID '$(vars.id)' does not exist&quot;]" >
 			<error-mapping sourceType="VALIDATION:INVALID_BOOLEAN" targetType="APP:NOT_FOUND" />
 		</validation:is-true>
 		<mongo:remove-documents collectionName="mft-config-jobs" doc:name="remove job" doc:id="bf4d5234-69ce-46b0-8fd6-d20c43b2f763" config-ref="MongoDB_Config">
-			<mongo:query ><![CDATA[#[output application/json
+			<mongo:find-query ><![CDATA[#[output application/json
 ---
-{ '_id': { '\$oid': vars.id } }]]]></mongo:query>
+{ '_id': { '\$oid': vars.id } }]]]></mongo:find-query>
 		</mongo:remove-documents>
     </flow>
     <flow name="delete:\systems\types\(name):mft-config-sapi-config">
@@ -218,30 +241,30 @@ output application/json
             </ee:variables>
         </ee:transform>
 		<mongo:count-documents collectionName="mft-config-system-types" doc:name="validate that type exists" doc:id="7699c56e-f230-4922-9256-883c40c7e76f" config-ref="MongoDB_Config">
-			<mongo:query ><![CDATA[#[output application/json
+			<mongo:condition-query ><![CDATA[#[output application/json
 ---
-{ '_id': vars.name }]]]></mongo:query>
+{ '_id': vars.name }]]]></mongo:condition-query>
 		</mongo:count-documents>
 		<validation:is-true doc:name="throw APP:NOT_FOUND if count &lt;= 0" doc:id="dfc33303-e538-4b93-832d-482e6faf5893" expression="#[payload &gt; 0]" message="#[&quot;Could not find system type with name '$(vars.name)'&quot;]">
 			<error-mapping sourceType="VALIDATION:INVALID_BOOLEAN" targetType="APP:NOT_FOUND" />
 		</validation:is-true>
 		<mongo:count-documents doc:name="make sure system type is not in use" doc:id="d6a5c9fd-a6b6-43bb-8d34-01d14618647d" config-ref="MongoDB_Config" collectionName="mft-config-systems">
-			<mongo:query ><![CDATA[#[output application/json
+			<mongo:condition-query ><![CDATA[#[output application/json
 ---
-{ systemType: vars.name }]]]></mongo:query>
+{ systemType: vars.name }]]]></mongo:condition-query>
 		</mongo:count-documents>
 		<validation:is-true doc:name="throw APP:BAD_REQUEST if count &gt; 0" doc:id="8cbe0d2c-14eb-47e6-b005-37ed56e9aaec" expression="#[payload==0]" message="#[&quot;System type '$(vars.name)' is in use - cannot delete&quot;]">
 			<error-mapping sourceType="VALIDATION:INVALID_BOOLEAN" targetType="APP:BAD_REQUEST" />
 		</validation:is-true>
 		<mongo:remove-documents doc:name="remove systemType" doc:id="ecfc7603-edd3-4e14-a32b-bb4c163bc910" config-ref="MongoDB_Config" collectionName="mft-config-system-types">
-			<mongo:query ><![CDATA[#[output application/json
+			<mongo:find-query><![CDATA[#[output application/json
 ---
-{ '_id': vars.name }]]]></mongo:query>
+{ '_id': vars.name }]]]></mongo:find-query>
 		</mongo:remove-documents>
     </flow>
     <flow name="get:\jobs:mft-config-sapi-config">
         <mongo:find-documents collectionName="mft-config-jobs" fields="," doc:name="find jobs - with query params" doc:id="3273caad-1e5e-4d35-b2c2-d00228b1556d" config-ref="MongoDB_Config">
-            <mongo:query><![CDATA[#[output application/json
+            <mongo:condition-query><![CDATA[#[output application/json
 var bothSystemIds = [(attributes.queryParams.system) if (attributes.queryParams.system?)]
 var inboundSystemIds  = [(attributes.queryParams.inboundSystem) if (attributes.queryParams.inboundSystem?)] ++ bothSystemIds
 var outboundSystemIds = [(attributes.queryParams.outboundSystem) if (attributes.queryParams.outboundSystem?)] ++ bothSystemIds
@@ -257,7 +280,7 @@ var outboundSystemIds = [(attributes.queryParams.outboundSystem) if (attributes.
 			'\$in': outboundSystemIds map ($ as String)
 		}
 	}) if (sizeOf(outboundSystemIds) > 0)
-}]]]></mongo:query>
+}]]]></mongo:condition-query>
         </mongo:find-documents>
         <ee:transform doc:name="transform mongo object" doc:id="4f663faf-31f1-4612-b65f-0992407b0100">
             <ee:message>
@@ -275,11 +298,11 @@ payload map ( payload01 , indexOfPayload01 ) -> {
     </flow>
     <flow name="get:\systems:mft-config-sapi-config">
         <mongo:find-documents doc:name="find systems - with query params" doc:id="c03c565b-caaf-4a5c-bf95-327efc8e7d03" config-ref="MongoDB_Config" collectionName="mft-config-systems" fields=",">
-            <mongo:query><![CDATA[#[output application/json
+            <mongo:condition-query><![CDATA[#[output application/json
 ---
 {
 	(systemType: attributes.queryParams.systemType) if (attributes.queryParams.systemType?)
-}]]]></mongo:query>
+}]]]></mongo:condition-query>
         </mongo:find-documents>
         <ee:transform doc:name="transform mongo object" doc:id="16ea5b26-f3ca-402f-8b95-7df4e3a1fce9">
             <ee:message>
@@ -297,9 +320,9 @@ payload map ( payload01 , indexOfPayload01 ) -> {
     </flow>
     <flow name="get:\systems\types:mft-config-sapi-config">
         <mongo:find-documents collectionName="mft-config-system-types" fields="," doc:name="find system types - all" doc:id="93c2b53d-dc8b-441c-a389-3d82720969d0" config-ref="MongoDB_Config">
-            <mongo:query><![CDATA[#[output application/json
+            <mongo:condition-query><![CDATA[#[output application/json
 ---
-{}]]]></mongo:query>
+{}]]]></mongo:condition-query>
         </mongo:find-documents>
         <ee:transform doc:name="transform mongo object" doc:id="019e035f-9bdd-4a5a-b8a4-732eaebc2607">
             <ee:message>
@@ -323,11 +346,11 @@ payload map ( payload01 , indexOfPayload01 ) -> {
             </ee:variables>
         </ee:transform>
         <mongo:find-documents doc:name="find job with ID" doc:id="9e2aa05d-96c3-4d14-ba4a-ad192373de1b" config-ref="MongoDB_Config" collectionName="mft-config-jobs" fields=",">
-            <mongo:query><![CDATA[#[output application/json
+            <mongo:condition-query><![CDATA[#[output application/json
 ---
 {
 	'_id': { '\$oid': vars.id }
-}]]]></mongo:query>
+}]]]></mongo:condition-query>
         </mongo:find-documents>
         <validation:is-not-empty-collection doc:name="throw APP:NOT_FOUND if empty" doc:id="146b9795-a803-4c59-b56b-9d89017807aa">
             <error-mapping sourceType="VALIDATION:EMPTY_COLLECTION" targetType="APP:NOT_FOUND" />
@@ -353,11 +376,11 @@ output application/json
             </ee:variables>
         </ee:transform>
         <mongo:find-documents collectionName="mft-config-systems" fields="," doc:name="find system with ID" doc:id="7bb97ad7-fc3b-4833-adf6-6f8936b8f9f3" config-ref="MongoDB_Config">
-            <mongo:query><![CDATA[#[output application/json
+            <mongo:condition-query><![CDATA[#[output application/json
 ---
 {
 	'_id': { '\$oid': vars.id }
-}]]]></mongo:query>
+}]]]></mongo:condition-query>
         </mongo:find-documents>
         <validation:is-not-empty-collection doc:name="throw APP:NOT_FOUND if empty" doc:id="c5137cb1-85fc-4a9b-8ba0-f6cd5568b39f">
             <error-mapping sourceType="VALIDATION:EMPTY_COLLECTION" targetType="APP:NOT_FOUND" />
@@ -383,11 +406,11 @@ output application/json
             </ee:variables>
         </ee:transform>
         <mongo:find-documents doc:name="find system type with ID" doc:id="70863dd9-2ccd-4d46-ab4a-bb8d7ffd272f" config-ref="MongoDB_Config" collectionName="mft-config-system-types" fields=",">
-            <mongo:query><![CDATA[#[output application/json
+            <mongo:condition-query><![CDATA[#[output application/json
 ---
 {
 	'_id': vars.name
-}]]]></mongo:query>
+}]]]></mongo:condition-query>
         </mongo:find-documents>
         <validation:is-not-empty-collection doc:name="throw APP:NOT_FOUND if empty" doc:id="15c82db7-eba8-46ca-a04d-e3d68def7cc4">
             <error-mapping sourceType="VALIDATION:EMPTY_COLLECTION" targetType="APP:NOT_FOUND" />
