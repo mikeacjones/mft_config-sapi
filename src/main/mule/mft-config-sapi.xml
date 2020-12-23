@@ -137,38 +137,50 @@ output application/json
         </error-handler>
     </flow>
     <flow name="put:\systems\(id):application\json:mft-config-sapi-config">
-        <ee:transform>
+        <ee:transform doc:name="vars.id">
             <ee:variables>
                 <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
             </ee:variables>
         </ee:transform>
-        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
+		<mongo:count-documents collectionName="mft-config-systems" doc:name="validate that system exists" doc:id="f628b9c3-b122-4ddd-9a27-f63cc883743a" config-ref="MongoDB_Config" target="systemCount" >
+			<mongo:condition-query ><![CDATA[#[output application/json
 ---
-{
-  message: "System config not found"
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
+{ '_id': { '\$oid': vars.id } }]]]></mongo:condition-query>
+		</mongo:count-documents>
+		<validation:is-true doc:name="throw APP:NOT_FOUND if count &lt;= 0" doc:id="1ac84388-5891-48c2-9365-bc18793acbdc" expression="#[vars.systemCount &gt; 0]" message="#[&quot;System with ID '$(vars.id)' does not exist&quot;]" >
+			<error-mapping sourceType="VALIDATION:INVALID_BOOLEAN" targetType="APP:NOT_FOUND" />
+		</validation:is-true>
+		<mongo:update-documents collectionName="mft-config-systems" doc:name="update system" doc:id="58e49715-6c48-4bda-b94e-3accf776dea7" config-ref="MongoDB_Config" >
+			<mongo:find-query ><![CDATA[#[output application/json
+---
+{ '_id': { '\$oid': vars.id } }]]]></mongo:find-query>
+			<mongo:content-to-update ><![CDATA[#[output application/json
+---
+payload - "id"]]]></mongo:content-to-update>
+		</mongo:update-documents>
     </flow>
     <flow name="put:\jobs\(id):application\json:mft-config-sapi-config">
-        <ee:transform>
+        <ee:transform doc:name="vars.id">
             <ee:variables>
                 <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
             </ee:variables>
         </ee:transform>
-        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
+		<mongo:count-documents collectionName="mft-config-jobs" doc:name="validate that type exists" doc:id="a717eda8-8ae2-46b3-aea5-e43eccc592d9" config-ref="MongoDB_Config" target="jobCount" >
+			<mongo:condition-query ><![CDATA[#[output application/json
 ---
-{
-  message: "Job with ID not found"
-}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
+{ '_id': { '\$oid': vars.id } }]]]></mongo:condition-query>
+		</mongo:count-documents>
+		<validation:is-true doc:name="throw APP:NOT_FOUND if count &lt;= 0" doc:id="dec9e493-94f4-4765-95e6-184097f97466" expression="#[vars.jobCount &gt; 0]" message="#[&quot;Job with ID '$(vars.id)' does not exist&quot;]" >
+			<error-mapping sourceType="VALIDATION:INVALID_BOOLEAN" targetType="APP:NOT_FOUND" />
+		</validation:is-true>
+		<mongo:update-documents collectionName="mft-config-system-types" doc:name="update job" doc:id="5ce6b6ad-3684-424e-965d-98f793a9d573" config-ref="MongoDB_Config" >
+			<mongo:find-query ><![CDATA[#[output application/json
+---
+{ '_id': { '\$oid': vars.id } }]]]></mongo:find-query>
+			<mongo:content-to-update ><![CDATA[#[output application/json
+---
+payload - "id"]]]></mongo:content-to-update>
+		</mongo:update-documents>
     </flow>
     <flow name="put:\systems\types\(name):application\json:mft-config-sapi-config">
         <ee:transform doc:name="vars.name" doc:id="c662d45e-5110-4eed-822c-ae9942667af9">
